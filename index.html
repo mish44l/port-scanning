@@ -1,0 +1,374 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>NetGuard | Network Security Dashboard</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="layout">
+
+        <!-- Sidebar -->
+        <aside>
+            <h2>◈ NetGuard</h2>
+            <p>Network Security Console</p>
+
+            <nav>
+                <a href="#scanner">⌕ Scanner</a>
+                <a href="#firewall">▣ Firewall Rules</a>
+                <a href="#simulator">⇄ Traffic Simulator</a>
+                <a href="#history">◷ Scan History</a>
+            </nav>
+
+            <div class="note">
+                For authorized private networks only.
+                <br>
+                Open ports are not proof of vulnerabilities.
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+
+            <!-- Header -->
+            <header>
+                <div>
+                    <span class="eyebrow">SECURITY OPERATIONS</span>
+                    <h1>Network Security Scanner</h1>
+                    <p>
+                        Discover services, simulate firewall policies,
+                        and visualize packet decisions.
+                    </p>
+                </div>
+
+                <span class="status">● Local Dashboard</span>
+            </header>
+
+            <!-- 01: Network Scanner -->
+            <section id="scanner" class="panel">
+
+                <div class="heading">
+                    <h2>01 / Network Scanner</h2>
+                    <span>TCP Connect · SYN · UDP</span>
+                </div>
+
+                <div class="fields">
+
+                    <label>
+                        Target IP or hostname
+                        <input
+                            id="target"
+                            value="127.0.0.1"
+                            placeholder="192.168.1.10"
+                        >
+                    </label>
+
+                    <label>
+                        Scan type
+                        <select id="mode">
+                            <option value="connect">TCP Full Connect</option>
+                            <option value="syn">TCP SYN (Nmap)</option>
+                            <option value="udp">UDP (Nmap)</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Ports (max 256)
+                        <input
+                            id="ports"
+                            value="21,22,53,80,443,8080"
+                            placeholder="20-80,443"
+                        >
+                    </label>
+
+                    <button id="scanBtn" onclick="runScan()">
+                        Start Scan
+                    </button>
+
+                </div>
+
+                <div id="scanError" class="error"></div>
+
+                <!-- Scan Statistics -->
+                <div class="stats">
+
+                    <div>
+                        <small>PORTS SCANNED</small>
+                        <strong id="total">—</strong>
+                    </div>
+
+                    <div>
+                        <small>OPEN</small>
+                        <strong id="open">—</strong>
+                    </div>
+
+                    <div>
+                        <small>CLOSED</small>
+                        <strong id="closed">—</strong>
+                    </div>
+
+                    <div>
+                        <small>OTHER</small>
+                        <strong id="other">—</strong>
+                    </div>
+
+                </div>
+
+                <!-- Scan Results -->
+                <div class="tablewrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>IP</th>
+                                <th>PORT</th>
+                                <th>PROTOCOL</th>
+                                <th>SERVICE</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="scanRows">
+                            <tr>
+                                <td colspan="5" class="empty">
+                                    Run a scan to view results
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Scan Information -->
+                <div class="actions">
+                    <span id="scanMeta"></span>
+                </div>
+
+            </section>
+
+            <!-- 02: Firewall Rule Manager -->
+            <section id="firewall" class="panel">
+
+                <div class="heading">
+                    <h2>02 / Firewall Rule Manager</h2>
+                    <span>Lower priority number runs first</span>
+                </div>
+
+                <div class="fields rules-fields">
+
+                    <label>
+                        Action
+                        <select id="action">
+                            <option value="deny">Deny</option>
+                            <option value="allow">Allow</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        IP / CIDR
+                        <input
+                            id="ruleIp"
+                            value="any"
+                            placeholder="any or 192.168.1.0/24"
+                        >
+                    </label>
+
+                    <label>
+                        Port
+                        <input
+                            id="rulePort"
+                            value="any"
+                            placeholder="any or 443"
+                        >
+                    </label>
+
+                    <label>
+                        Protocol
+                        <select id="ruleProtocol">
+                            <option value="any">Any</option>
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Priority
+                        <input
+                            id="priority"
+                            type="number"
+                            min="0"
+                            max="10000"
+                            value="100"
+                        >
+                    </label>
+
+                    <button onclick="saveRule()" id="ruleBtn">
+                        Add Rule
+                    </button>
+
+                </div>
+
+                <div id="ruleError" class="error"></div>
+
+                <!-- Firewall Rules Table -->
+                <div class="tablewrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PRIORITY</th>
+                                <th>ACTION</th>
+                                <th>IP / CIDR</th>
+                                <th>PORT</th>
+                                <th>PROTOCOL</th>
+                                <th>MANAGE</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="ruleRows">
+                            <tr>
+                                <td colspan="6" class="empty">
+                                    No rules yet — default allow
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </section>
+
+            <!-- 03: Traffic Flow Visualizer -->
+            <section id="simulator" class="panel">
+
+                <div class="heading">
+                    <h2>03 / Traffic Flow Visualizer</h2>
+                    <span>
+                        Simulated packet — no actual firewall changes
+                    </span>
+                </div>
+
+                <div class="fields">
+
+                    <label>
+                        Source IP
+                        <input
+                            id="packetIp"
+                            value="192.168.1.15"
+                        >
+                    </label>
+
+                    <label>
+                        Destination port
+                        <input
+                            id="packetPort"
+                            type="number"
+                            value="443"
+                        >
+                    </label>
+
+                    <label>
+                        Protocol
+                        <select id="packetProtocol">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                        </select>
+                    </label>
+
+                    <button onclick="simulate()">
+                        Simulate Packet
+                    </button>
+
+                </div>
+
+                <div id="simError" class="error"></div>
+
+                <!-- Traffic Flow Diagram -->
+                <div class="flow">
+
+                    <div class="node">
+                        ◉
+                        <b>Source</b>
+                        <small id="flowSource">
+                            192.168.1.15
+                        </small>
+                    </div>
+
+                    <div class="arrow">
+                        ────────→
+                    </div>
+
+                    <div class="node firewallnode">
+                        ▣
+                        <b>Firewall</b>
+                        <small>Priority Rules</small>
+                    </div>
+
+                    <div class="arrow" id="flowArrow">
+                        ────────→
+                    </div>
+
+                    <div class="node" id="destination">
+                        ◎
+                        <b>Destination</b>
+                        <small id="flowDest">
+                            TCP : 443
+                        </small>
+                    </div>
+
+                </div>
+
+                <!-- Firewall Decision -->
+                <div class="decision" id="decision">
+                    Enter packet details and click Simulate Packet
+                </div>
+
+            </section>
+
+            <!-- 04: Recent Scan History -->
+            <section id="history" class="panel">
+
+                <div class="heading">
+                    <h2>04 / Recent Scan History</h2>
+                    <span>
+                        Last 20 scans · stored until server restart
+                    </span>
+                </div>
+
+                <div class="tablewrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>DATE</th>
+                                <th>TARGET</th>
+                                <th>MODE</th>
+                                <th>PORTS</th>
+                                <th>OPEN</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="historyRows">
+                            <tr>
+                                <td colspan="5" class="empty">
+                                    No scans yet
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </section>
+
+            <!-- Footer -->
+            <footer>
+                NetGuard · Educational Network Security Project ·
+                Scan only systems you own or have permission to test
+            </footer>
+
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
